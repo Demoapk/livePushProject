@@ -3,6 +3,7 @@
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 #include <android/native_window.h>
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -46,7 +47,7 @@ private:
     GLint bTexMatrix_ = -1;
     GLint bTexture_ = -1;
     GLint bTexelSize_ = -1;
-    bool beautyEnabled_ = false;
+    std::atomic<bool> beautyEnabled_{false};
 
     EglCore encoderEgl_;
     EGLSurface encoderSurface_ = EGL_NO_SURFACE;

@@ -44,15 +44,16 @@ void main() {
             vec2 off = vec2(float(dx), float(dy)) * uTexelSize;
             vec3 t = texture2D(uTexture, vTexCoord + off).rgb;
             float sp = float(dx * dx + dy * dy);
-            float w = exp(-sp / 8.0);
+            float w = exp(-sp / 12.0);
             vec3 d = t - c;
-            w *= exp(-dot(d, d) * 20.0);
+            w *= exp(-dot(d, d) * 8.0);
             sum += t * w;
             wsum += w;
         }
     }
     vec3 blurred = sum / wsum;
-    vec3 outColor = blurred + (c - blurred) * 0.75;
+    vec3 outColor = blurred + (c - blurred) * 0.35;
+    outColor = clamp(outColor * 1.04 + vec3(0.01), 0.0, 1.0);
     gl_FragColor = vec4(outColor, 1.0);
 }
 )";
