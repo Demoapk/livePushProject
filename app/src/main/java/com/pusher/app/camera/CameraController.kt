@@ -18,6 +18,7 @@ class CameraController {
         height: Int,
         listener: ICameraSource.Listener
     ) {
+        // 关闭旧相机，根据当前模式创建 Camera1 或 Camera2 输入源。
         close()
         source = when (mode) {
             Mode.CAMERA2 -> Camera2Source()
@@ -27,11 +28,13 @@ class CameraController {
     }
 
     fun close() {
+        // 关闭并释放当前相机输入源。
         source?.close()
         source = null
     }
 
     fun switchFacing() {
+        // 在前/后摄像头之间切换。
         facing = if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
             CameraCharacteristics.LENS_FACING_BACK
         } else {

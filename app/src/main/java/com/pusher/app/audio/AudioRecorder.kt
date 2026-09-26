@@ -19,6 +19,7 @@ class AudioRecorder(
     private var recordThread: Thread? = null
     private var audioRecord: AudioRecord? = null
 
+    /** 初始化并启动麦克风采集线程。 */
     @SuppressLint("MissingPermission")
     fun start() {
         if (running.getAndSet(true)) return
@@ -94,6 +95,7 @@ class AudioRecorder(
         recordThread?.start()
     }
 
+    /** 停止采集线程并释放 AudioRecord。 */
     fun stop() {
         if (!running.getAndSet(false)) return
         recordThread?.join(500)

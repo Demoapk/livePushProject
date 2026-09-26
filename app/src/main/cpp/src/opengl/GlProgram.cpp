@@ -4,11 +4,13 @@
 
 namespace pusher {
 
+// 析构函数：释放 GL program 和 shader。
 GlProgram::~GlProgram() {
     release();
 }
 
 namespace {
+// 编译一个 shader，失败返回 0。
 GLuint compileShader(GLenum type, const char* source) {
     GLuint shader = glCreateShader(type);
     glShaderSource(shader, 1, &source, nullptr);
@@ -27,6 +29,7 @@ GLuint compileShader(GLenum type, const char* source) {
 }
 }  // namespace
 
+// 编译并链接 GL program。
 bool GlProgram::build(const char* vertexSource, const char* fragmentSource) {
     vertexShader_ = compileShader(GL_VERTEX_SHADER, vertexSource);
     fragmentShader_ = compileShader(GL_FRAGMENT_SHADER, fragmentSource);
@@ -57,10 +60,12 @@ bool GlProgram::build(const char* vertexSource, const char* fragmentSource) {
     return true;
 }
 
+// 启用当前 GL program。
 void GlProgram::use() const {
     glUseProgram(program_);
 }
 
+// 释放 program 和未删除的 shader。
 void GlProgram::release() {
     if (program_ != 0) {
         glDeleteProgram(program_);
@@ -76,10 +81,12 @@ void GlProgram::release() {
     }
 }
 
+// 获取 attribute 位置。
 GLint GlProgram::attribute(const char* name) const {
     return glGetAttribLocation(program_, name);
 }
 
+// 获取 uniform 位置。
 GLint GlProgram::uniform(const char* name) const {
     return glGetUniformLocation(program_, name);
 }

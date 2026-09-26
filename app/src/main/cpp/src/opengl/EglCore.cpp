@@ -4,10 +4,12 @@
 
 namespace pusher {
 
+// 析构函数：释放 EGL 上下文。
 EglCore::~EglCore() {
     release();
 }
 
+// 选择可录制 RGBA 配置并创建共享 EGL 上下文。
 bool EglCore::init(EGLDisplay display, EGLContext sharedContext) {
     if (display == EGL_NO_DISPLAY) {
         LOGE("EglCore: no display");
@@ -48,6 +50,7 @@ bool EglCore::init(EGLDisplay display, EGLContext sharedContext) {
     return true;
 }
 
+// 销毁 EGL 上下文并清空状态。
 void EglCore::release() {
     if (display_ != EGL_NO_DISPLAY && context_ != EGL_NO_CONTEXT) {
         eglDestroyContext(display_, context_);
@@ -58,25 +61,30 @@ void EglCore::release() {
     presentationTime_ = nullptr;
 }
 
+// 用 ANativeWindow 创建 EGL 窗口 Surface。
 EGLSurface EglCore::createWindowSurface(ANativeWindow* window) {
     if (window == nullptr) return EGL_NO_SURFACE;
     return eglCreateWindowSurface(display_, config_, window, nullptr);
 }
 
+// 销毁指定 EGL Surface。
 void EglCore::destroySurface(EGLSurface surface) {
     if (display_ != EGL_NO_DISPLAY && surface != EGL_NO_SURFACE) {
         eglDestroySurface(display_, surface);
     }
 }
 
+// 将指定 Surface 设为当前渲染目标。
 bool EglCore::makeCurrent(EGLSurface surface) {
     return eglMakeCurrent(display_, surface, surface, context_) == EGL_TRUE;
 }
 
+// 交换指定 Surface 的前后缓冲区。
 bool EglCore::swapBuffers(EGLSurface surface) {
     return eglSwapBuffers(display_, surface) == EGL_TRUE;
 }
 
+// 设置编码器输入帧的显示时间戳。
 void EglCore::setPresentationTime(EGLSurface surface, int64_t nsecs) {
     if (presentationTime_ != nullptr) {
         presentationTime_(display_, surface, static_cast<EGLnsecsANDROID>(nsecs));

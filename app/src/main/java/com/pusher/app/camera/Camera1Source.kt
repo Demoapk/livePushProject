@@ -16,6 +16,7 @@ class Camera1Source : ICameraSource {
         facing: Int,
         listener: ICameraSource.Listener
     ) {
+        // 打开对应方向的摄像头，选择最接近目标分辨率的预览尺寸并启动预览。
         close()
         val cameraId = findCameraId(facing)
         if (cameraId < 0) {
@@ -47,6 +48,7 @@ class Camera1Source : ICameraSource {
     }
 
     override fun close() {
+        // 停止预览并释放 Camera 对象。
         try {
             camera?.stopPreview()
         } catch (_: Throwable) {
@@ -60,6 +62,7 @@ class Camera1Source : ICameraSource {
     }
 
     private fun findCameraId(facing: Int): Int {
+        // 根据前/后摄像头方向查找 Camera1 的摄像头 id。
         val count = Camera.getNumberOfCameras()
         val info = Camera.CameraInfo()
         for (i in 0 until count) {
@@ -74,6 +77,7 @@ class Camera1Source : ICameraSource {
         targetWidth: Int,
         targetHeight: Int
     ): Camera.Size? {
+        // 从支持列表中挑选面积和宽高最接近目标的预览尺寸。
         if (sizes.isNullOrEmpty()) {
             return null
         }
@@ -91,6 +95,7 @@ class Camera1Source : ICameraSource {
     }
 
     private fun chooseFocusMode(supported: List<String>?): String {
+        // 优先选择连续视频对焦，依次回退到连续拍照对焦和自动对焦。
         if (supported.isNullOrEmpty()) return ""
         return when {
             supported.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO) ->

@@ -29,6 +29,7 @@ class Camera2Source : ICameraSource {
         facing: Int,
         listener: ICameraSource.Listener
     ) {
+        // 创建 Camera2 会话，把预览输出绑定到 SurfaceTexture。
         close()
         this.surfaceTexture = surfaceTexture
 
@@ -79,6 +80,7 @@ class Camera2Source : ICameraSource {
         surface: Surface,
         listener: ICameraSource.Listener
     ) {
+        // 创建 CameraCaptureSession 并下发重复预览请求。
         try {
             device.createCaptureSession(
                 listOf(surface),
@@ -111,6 +113,7 @@ class Camera2Source : ICameraSource {
     }
 
     override fun close() {
+        // 关闭 session、camera 设备并退出相机线程。
         try {
             captureSession?.close()
         } catch (_: Throwable) {
@@ -131,6 +134,7 @@ class Camera2Source : ICameraSource {
     }
 
     private fun findCameraId(manager: CameraManager, facing: Int): String? {
+        // 根据前/后摄像头方向查找 Camera2 的摄像头 id。
         return manager.cameraIdList.firstOrNull { id ->
             manager.getCameraCharacteristics(id)
                 .get(CameraCharacteristics.LENS_FACING) == facing
@@ -142,6 +146,7 @@ class Camera2Source : ICameraSource {
         targetWidth: Int,
         targetHeight: Int
     ): android.util.Size {
+        // 从支持列表中挑选面积和宽高最接近目标的预览尺寸。
         if (sizes.isEmpty()) return android.util.Size(1280, 720)
         var best = sizes[0]
         var bestScore = Long.MAX_VALUE

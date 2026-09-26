@@ -8,12 +8,14 @@
 
 namespace pusher {
 
+// 析构函数：统一释放渲染、编码和推流资源。
 StreamEngine::~StreamEngine() {
     release();
 }
 
 StreamEngine::StreamEngine() = default;
 
+// 在 GL 线程创建或重建渲染器。
 bool StreamEngine::initGl() {
     if (renderer_) {
         renderer_->release();
@@ -23,23 +25,27 @@ bool StreamEngine::initGl() {
     return renderer_->init();
 }
 
+// 创建相机使用的 OES 外部纹理。
 int StreamEngine::createOesTexture() {
     if (!renderer_) return -1;
     return static_cast<int>(renderer_->createOesTexture());
 }
 
+// 每帧渲染预览；推流时再渲染到编码器输入 Surface。
 void StreamEngine::renderFrame(const float* transformMatrix, int64_t timestampNs) {
     if (renderer_) {
         renderer_->renderFrame(transformMatrix, timestampNs);
     }
 }
 
+// 开启或关闭美颜滤镜。
 void StreamEngine::setBeautyEnabled(bool enabled) {
     if (renderer_) {
         renderer_->setBeautyEnabled(enabled);
     }
 }
 
+// 创建音视频编码器和 RTMP Pipeline，等编码配置就绪后连接服务器。
 int StreamEngine::startStream(const char* url,
                               const VideoConfig& video,
                               const AudioConfig& audio) {
@@ -90,6 +96,7 @@ int StreamEngine::startStream(const char* url,
     return 0;
 }
 
+// 按顺序释放编码器窗口、音视频编码器和 Pipeline。
 void StreamEngine::stopStream() {
     if (renderer_) {
         renderer_->releaseEncoderNow();
@@ -108,12 +115,14 @@ void StreamEngine::stopStream() {
     }
 }
 
+// 把麦克风 PCM 数据送入 AAC 编码器。
 void StreamEngine::onAudioPcm(const uint8_t* pcm, size_t size, int64_t timestampNs) {
     if (audioEncoder_) {
         audioEncoder_->feed(pcm, size, timestampNs / 1000);
     }
 }
 
+// 释放所有 native 资源。
 void StreamEngine::release() {
     stopStream();
     if (renderer_) {

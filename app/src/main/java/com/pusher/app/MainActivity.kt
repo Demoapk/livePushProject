@@ -67,6 +67,7 @@ class MainActivity : AppCompatActivity() {
         }
 
     private val renderer = object : GLSurfaceView.Renderer {
+        /** GL surface 创建时初始化 native 渲染环境和相机 OES 纹理。 */
         override fun onSurfaceCreated(gl: javax.microedition.khronos.opengles.GL10?, config: javax.microedition.khronos.egl.EGLConfig?) {
             val result = NativeStreamer.nativeInitGl()
             if (result != 0) {
@@ -91,11 +92,13 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread { openCameraIfReady() }
         }
 
+        /** GL surface 尺寸变化时设置视口。 */
         override fun onSurfaceChanged(gl: javax.microedition.khronos.opengles.GL10?, width: Int, height: Int) {
             GLES20.glViewport(0, 0, width, height)
             NativeStreamer.nativeRenderFrame(FloatArray(16) { 0f }, 0L)
         }
 
+        /** 每帧更新 SurfaceTexture 并调用 native 渲染。 */
         override fun onDrawFrame(gl: javax.microedition.khronos.opengles.GL10?) {
             val tex = surfaceTexture ?: return
             if (frameAvailable.compareAndSet(true, false)) {
@@ -107,6 +110,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    /** 创建页面、初始化 GLSurfaceView、下拉框、按钮并申请权限。 */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -122,6 +126,7 @@ class MainActivity : AppCompatActivity() {
 
         preview.setEGLContextClientVersion(3)
         preview.setEGLConfigChooser(object : GLSurfaceView.EGLConfigChooser {
+            /** 选择支持 OpenGL ES3 且可录制的 EGL 配置。 */
             override fun chooseConfig(
                 egl: EGL10,
                 display: javax.microedition.khronos.egl.EGLDisplay
@@ -154,6 +159,7 @@ class MainActivity : AppCompatActivity() {
         checkPermissions()
     }
 
+    /** 初始化分辨率和相机模式下拉框。 */
     private fun setupSpinners() {
         ArrayAdapter.createFromResource(
             this,
@@ -191,6 +197,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** 绑定切换摄像头、开始/停止推流和美颜开关按钮。 */
     private fun setupButtons() {
         switchCamera.setOnClickListener {
             cameraController.switchFacing()
@@ -208,6 +215,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** 检查并申请相机和麦克风权限。 */
     private fun checkPermissions() {
         val missing = mutableListOf<String>()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -223,6 +231,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** 在 GL 环境和相机纹理就绪后打开相机。 */
     private fun openCameraIfReady() {
         if (!glReady || surfaceTexture == null) {
             cameraPending = true
@@ -251,6 +260,7 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    /** 根据下拉框选择返回目标宽高。 */
     private fun selectedResolution(): Pair<Int, Int> {
         return when (resolutionSpinner.selectedItemPosition) {
             0 -> 1280 to 720
@@ -261,6 +271,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     @SuppressLint("SetTextI18n")
+    /** 后台线程启动 native 推流，并在成功后启动麦克风采集。 */
     private fun startStream() {
         if (streaming) return
         val url = urlInput.text.toString().trim()
@@ -302,6 +313,7 @@ class MainActivity : AppCompatActivity() {
         }, "stream-start").start()
     }
 
+    /** 停止麦克风采集和 native 推流。 */
     private fun stopStream() {
         audioRecorder?.stop()
         audioRecorder = null
@@ -315,6 +327,7 @@ class MainActivity : AppCompatActivity() {
         urlInput.isEnabled = true
     }
 
+    /** 页面暂停时停止推流、关闭相机并暂停 GLSurfaceView。 */
     override fun onPause() {
         if (streaming) stopStream()
         cameraController.close()
@@ -322,12 +335,14 @@ class MainActivity : AppCompatActivity() {
         preview.onPause()
     }
 
+    /** 页面恢复时恢复 GLSurfaceView，并在 GL 就绪后重开相机。 */
     override fun onResume() {
         super.onResume()
         preview.onResume()
         if (glReady) openCameraIfReady()
     }
 
+    /** 销毁时关闭相机并释放相机纹理。 */
     override fun onDestroy() {
         cameraController.close()
         surfaceTexture?.release()

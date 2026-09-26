@@ -11,10 +11,12 @@
 
 namespace pusher {
 
+// 析构函数：停止编码器。
 AudioEncoder::~AudioEncoder() {
     stop();
 }
 
+// 配置并启动 AAC 硬编码器。
 bool AudioEncoder::start(const AudioConfig& config, Callback callback) {
     stop();
     sampleRate_ = config.sampleRate;
@@ -62,6 +64,7 @@ bool AudioEncoder::start(const AudioConfig& config, Callback callback) {
     return true;
 }
 
+// 提取 AudioSpecificConfig。
 void AudioEncoder::extractAsc() {
     if (codec_ == nullptr) return;
     AMediaFormat* outFormat = AMediaCodec_getOutputFormat(codec_);
@@ -78,6 +81,7 @@ void AudioEncoder::extractAsc() {
     }
 }
 
+// 停止编码线程并释放 MediaCodec。
 void AudioEncoder::stop() {
     if (!running_.exchange(false)) {
         if (codec_ != nullptr) {
@@ -98,6 +102,7 @@ void AudioEncoder::stop() {
     feeds_ = 0;
 }
 
+// 等待 AudioSpecificConfig 可用，超时返回 false。
 bool AudioEncoder::waitForAsc(int timeoutMs) const {
     int waited = 0;
     while (!ascReady_ && waited < timeoutMs) {
@@ -107,6 +112,7 @@ bool AudioEncoder::waitForAsc(int timeoutMs) const {
     return ascReady_;
 }
 
+// 把 PCM 帧送入编码器输入队列。
 void AudioEncoder::feed(const uint8_t* pcm, size_t size, int64_t ptsUs) {
     if (codec_ == nullptr || !running_ || pcm == nullptr || size == 0) return;
 
@@ -131,6 +137,7 @@ void AudioEncoder::feed(const uint8_t* pcm, size_t size, int64_t ptsUs) {
     }
 }
 
+// 循环读取编码器输出，把 AAC 帧回调给 Pipeline。
 void AudioEncoder::drainLoop() {
     while (running_) {
         AMediaCodecBufferInfo info{};

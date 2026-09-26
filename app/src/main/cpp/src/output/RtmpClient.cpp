@@ -89,10 +89,12 @@ std::string joinHostPort(const std::string& host, uint16_t port) {
 
 }  // namespace
 
+// 析构函数：关闭并释放 RTMP 连接。
 RtmpClient::~RtmpClient() {
     close();
 }
 
+// 解析 rtmp://host[:port]/app/stream 形式的地址。
 bool RtmpClient::parseUrl(const std::string& url) {
     const std::string prefix = "rtmp://";
     if (url.rfind(prefix, 0) != 0) {
@@ -135,6 +137,7 @@ bool RtmpClient::parseUrl(const std::string& url) {
     return !host_.empty() && !stream_.empty();
 }
 
+// 创建非阻塞 TCP socket，并连接 RTMP 服务器。
 bool RtmpClient::openSocket() {
     fd_ = socket(AF_INET, SOCK_STREAM, 0);
     if (fd_ < 0) {
@@ -184,6 +187,7 @@ bool RtmpClient::openSocket() {
     return true;
 }
 
+// 把 data 全部发送出去；遇到 EAGAIN 时用 poll 等待后再发。
 bool RtmpClient::sendAll(const uint8_t* data, size_t size) {
     size_t sent = 0;
     while (sent < size) {
@@ -206,6 +210,7 @@ bool RtmpClient::sendAll(const uint8_t* data, size_t size) {
     return true;
 }
 
+// 从 socket 完整接收 size 字节；遇到 EAGAIN 时用 poll 等待。
 bool RtmpClient::recvAll(uint8_t* data, size_t size) {
     size_t got = 0;
     while (got < size) {
@@ -224,6 +229,7 @@ bool RtmpClient::recvAll(uint8_t* data, size_t size) {
     return true;
 }
 
+// 执行 RTMP 简单握手：C0/C1 -> S0/S1/S2 -> C2。
 bool RtmpClient::handshake() {
     std::vector<uint8_t> c1(1536, 0);
     std::random_device rd;
@@ -258,6 +264,7 @@ bool RtmpClient::handshake() {
     return true;
 }
 
+// 发送一条 RTMP message；这里把每条消息作为一个 chunk 发送。
 void RtmpClient::sendMessage(uint8_t type, uint32_t streamId, uint32_t timestampMs,
                              const uint8_t* payload, size_t size) {
     uint8_t csid = 3;
@@ -294,6 +301,7 @@ void RtmpClient::sendMessage(uint8_t type, uint32_t streamId, uint32_t timestamp
     }
 }
 
+// 发送 Set Chunk Size 控制消息，把 chunk size 设得足够大。
 bool RtmpClient::setChunkSize() {
     std::vector<uint8_t> payload;
     // 使用足够大的 chunk size，简化发送逻辑：单条 audio/video message 作为单个 chunk 发送。
@@ -302,6 +310,7 @@ bool RtmpClient::setChunkSize() {
     return true;
 }
 
+// 发送 AMF0 connect 命令。
 bool RtmpClient::sendConnect() {
     std::vector<uint8_t> cmd;
     amfString(cmd, "connect");
@@ -318,6 +327,7 @@ bool RtmpClient::sendConnect() {
     return true;
 }
 
+// 发送 AMF0 createStream 命令。
 bool RtmpClient::sendCreateStream() {
     std::vector<uint8_t> cmd;
     amfString(cmd, "createStream");
@@ -327,6 +337,7 @@ bool RtmpClient::sendCreateStream() {
     return true;
 }
 
+// 发送 AMF0 publish 命令，开始发布指定流名。
 bool RtmpClient::sendPublish() {
     std::vector<uint8_t> cmd;
     amfString(cmd, "publish");
@@ -338,6 +349,7 @@ bool RtmpClient::sendPublish() {
     return true;
 }
 
+// 解析地址、建立 TCP 连接，完成握手并发送 connect/createStream/publish。
 bool RtmpClient::connect(const std::string& url) {
     close();
     if (!parseUrl(url)) return false;
@@ -354,18 +366,21 @@ bool RtmpClient::connect(const std::string& url) {
     return true;
 }
 
+// 发送一个 FLV 视频 tag 对应的 RTMP 视频消息。
 bool RtmpClient::sendVideoTag(uint32_t timestampMs, const uint8_t* data, size_t size) {
     if (!connected()) return false;
     sendMessage(9, streamId_, timestampMs, data, size);
     return true;
 }
 
+// 发送一个 FLV 音频 tag 对应的 RTMP 音频消息。
 bool RtmpClient::sendAudioTag(uint32_t timestampMs, const uint8_t* data, size_t size) {
     if (!connected()) return false;
     sendMessage(8, streamId_, timestampMs, data, size);
     return true;
 }
 
+// 关闭 TCP 连接。
 void RtmpClient::close() {
     if (fd_ >= 0) {
         shutdown(fd_, SHUT_RDWR);

@@ -53,6 +53,7 @@ inline float clampf(float v, float lo, float hi) {
 
 }  // namespace
 
+// 动态加载 OpenCL 并创建计算上下文、程序和 kernel。
 bool OpenClBeauty::init() {
     release();
 
@@ -154,6 +155,7 @@ bool OpenClBeauty::init() {
     return true;
 }
 
+// 释放所有 OpenCL 对象和动态库。
 void OpenClBeauty::release() {
     if (kernel_ != nullptr) clReleaseKernel_(kernel_);
     if (program_ != nullptr) clReleaseProgram_(program_);
@@ -168,6 +170,7 @@ void OpenClBeauty::release() {
     clReady_ = false;
 }
 
+// 优先用 OpenCL 处理，失败则回退 CPU。
 bool OpenClBeauty::process(uint8_t* rgba, int width, int height) {
     if (rgba == nullptr || width <= 0 || height <= 0) return false;
     if (clReady_) {
@@ -177,6 +180,7 @@ bool OpenClBeauty::process(uint8_t* rgba, int width, int height) {
     return processCpu(rgba, width, height);
 }
 
+// 使用 OpenCL kernel 执行双边磨皮。
 bool OpenClBeauty::processOpenCl(uint8_t* rgba, int width, int height) {
     const size_t bytes = static_cast<size_t>(width) * height * 4;
     cl_int err = 0;
@@ -218,6 +222,7 @@ bool OpenClBeauty::processOpenCl(uint8_t* rgba, int width, int height) {
     return true;
 }
 
+// CPU 版双边磨皮，作为无 OpenCL 设备时的回退实现。
 bool OpenClBeauty::processCpu(uint8_t* rgba, int width, int height) {
     std::vector<uint8_t> copy(rgba, rgba + static_cast<size_t>(width) * height * 4);
     const int radius = kRadius;

@@ -68,6 +68,7 @@ constexpr float kQuadVertices[] = {
 
 }  // namespace
 
+// 编译普通和美颜两个 GL program，创建 VBO 和共享编码上下文。
 bool GlRenderer::init() {
     if (!program_.build(kVertexShader, kFragmentShader)) {
         return false;
@@ -105,6 +106,7 @@ bool GlRenderer::init() {
     return true;
 }
 
+// 创建相机 SurfaceTexture 使用的 OES 纹理。
 GLuint GlRenderer::createOesTexture() {
     glGenTextures(1, &oesTexture_);
     glBindTexture(GL_TEXTURE_EXTERNAL_OES, oesTexture_);
@@ -116,6 +118,7 @@ GLuint GlRenderer::createOesTexture() {
     return oesTexture_;
 }
 
+// 记录待创建的编码器输入窗口及尺寸。
 void GlRenderer::setEncoderWindow(ANativeWindow* window, int width, int height) {
     std::lock_guard<std::mutex> lock(encoderMutex_);
     pendingWindow_ = window;
@@ -126,14 +129,17 @@ void GlRenderer::setEncoderWindow(ANativeWindow* window, int width, int height) 
     }
 }
 
+// 请求下一帧销毁编码器输入 Surface。
 void GlRenderer::clearEncoder() {
     setEncoderWindow(nullptr, 0, 0);
 }
 
+// 开启或关闭美颜滤镜。
 void GlRenderer::setBeautyEnabled(bool enabled) {
     beautyEnabled_ = enabled;
 }
 
+// 立即销毁编码器输入 Surface。
 void GlRenderer::releaseEncoderNow() {
     std::lock_guard<std::mutex> lock(encoderMutex_);
     if (encoderSurface_ != EGL_NO_SURFACE) {
@@ -145,6 +151,7 @@ void GlRenderer::releaseEncoderNow() {
     clearRequested_ = false;
 }
 
+// 根据开关选择普通/美颜 shader，绘制相机 OES 纹理。
 void GlRenderer::drawQuad(const float* transformMatrix) {
     if (oesTexture_ == 0) return;
 
@@ -194,6 +201,7 @@ void GlRenderer::drawQuad(const float* transformMatrix) {
     glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
 }
 
+// 渲染预览；推流时再渲染到编码器输入 Surface。
 void GlRenderer::renderFrame(const float* transformMatrix, int64_t timestampNs) {
     EGLDisplay previewDisplay = eglGetCurrentDisplay();
     EGLContext previewContext = eglGetCurrentContext();
@@ -242,6 +250,7 @@ void GlRenderer::renderFrame(const float* transformMatrix, int64_t timestampNs) 
     }
 }
 
+// 释放 VBO、纹理、program 和编码上下文。
 void GlRenderer::release() {
     std::lock_guard<std::mutex> lock(encoderMutex_);
     if (encoderSurface_ != EGL_NO_SURFACE) {

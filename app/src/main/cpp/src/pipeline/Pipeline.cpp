@@ -13,10 +13,12 @@ Pipeline::Pipeline(VideoConfig videoConfig, AudioConfig audioConfig)
       videoQueue_(8),
       audioQueue_(32) {}
 
+// 析构函数：停止推流线程。
 Pipeline::~Pipeline() {
     stop();
 }
 
+// 连接 RTMP 服务器并启动发送线程。
 bool Pipeline::start(const std::string& url,
                      const std::vector<uint8_t>& sps,
                      const std::vector<uint8_t>& pps,
@@ -40,6 +42,7 @@ bool Pipeline::start(const std::string& url,
     return true;
 }
 
+// 停止发送线程并关闭连接。
 void Pipeline::stop() {
     if (!running_.exchange(false)) {
         return;
@@ -54,14 +57,17 @@ void Pipeline::stop() {
     audioQueue_.clear();
 }
 
+// 把编码后的视频帧放入发送队列。
 void Pipeline::onVideoPacket(VideoPacket&& packet) {
     videoQueue_.push(std::move(packet), false);
 }
 
+// 把编码后的音频帧放入发送队列。
 void Pipeline::onAudioPacket(AudioPacket&& packet) {
     audioQueue_.push(std::move(packet), false);
 }
 
+// 发送一次 AVC sequence header。
 void Pipeline::sendVideoHeader() {
     if (videoHeaderSent_) return;
     std::vector<uint8_t> body = muxer_.makeAvcSequenceHeader(sps_, pps_);
@@ -69,6 +75,7 @@ void Pipeline::sendVideoHeader() {
     videoHeaderSent_ = true;
 }
 
+// 发送一次 AAC sequence header。
 void Pipeline::sendAudioHeader() {
     if (audioHeaderSent_) return;
     std::vector<uint8_t> body = muxer_.makeAudioSequenceHeader(asc_);
@@ -76,18 +83,21 @@ void Pipeline::sendAudioHeader() {
     audioHeaderSent_ = true;
 }
 
+// 封装并发送一个视频帧。
 void Pipeline::sendVideo(const VideoPacket& packet, uint32_t timestampMs) {
     sendVideoHeader();
     std::vector<uint8_t> body = muxer_.makeVideoBody(packet, sps_, pps_);
     client_.sendVideoTag(timestampMs, body.data(), body.size());
 }
 
+// 封装并发送一个音频帧。
 void Pipeline::sendAudio(const AudioPacket& packet, uint32_t timestampMs) {
     sendAudioHeader();
     std::vector<uint8_t> body = muxer_.makeAudioBody(packet);
     client_.sendAudioTag(timestampMs, body.data(), body.size());
 }
 
+// 按时间戳归并发送音视频帧。
 void Pipeline::runLoop() {
     while (running_) {
         VideoPacket videoPeek;

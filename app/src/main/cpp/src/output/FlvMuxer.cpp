@@ -114,6 +114,7 @@ uint8_t audioSoundFormatByte(int sampleRate, int channels) {
 
 }  // namespace
 
+// 生成 AVC sequence header（包含 AVCDecoderConfigurationRecord）。
 std::vector<uint8_t> FlvMuxer::makeAvcSequenceHeader(
     const std::vector<uint8_t>& sps,
     const std::vector<uint8_t>& pps) const {
@@ -143,6 +144,7 @@ std::vector<uint8_t> FlvMuxer::makeAvcSequenceHeader(
     return out;
 }
 
+// 把 Annex-B H.264 转成 AVCC 并封装为 FLV 视频 tag body。
 std::vector<uint8_t> FlvMuxer::makeVideoBody(
     const VideoPacket& packet,
     const std::vector<uint8_t>& sps,
@@ -162,6 +164,7 @@ std::vector<uint8_t> FlvMuxer::makeVideoBody(
     return out;
 }
 
+// 生成 AAC sequence header。
 std::vector<uint8_t> FlvMuxer::makeAudioSequenceHeader(
     const std::vector<uint8_t>& asc) const {
     std::vector<uint8_t> out;
@@ -171,6 +174,7 @@ std::vector<uint8_t> FlvMuxer::makeAudioSequenceHeader(
     return out;
 }
 
+// 封装原始 AAC 帧为 FLV 音频 tag body。
 std::vector<uint8_t> FlvMuxer::makeAudioBody(const AudioPacket& packet) const {
     std::vector<uint8_t> out;
     out.push_back(audioSoundFormatByte(audio_.sampleRate, audio_.channels));

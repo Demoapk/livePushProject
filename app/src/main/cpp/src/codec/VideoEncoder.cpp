@@ -9,11 +9,13 @@
 
 namespace pusher {
 
+// 析构函数：停止编码器。
 VideoEncoder::~VideoEncoder() {
     stop();
 }
 
 namespace {
+// 判断 Annex-B 数据中是否包含 IDR 关键帧。
 bool isIdrFrame(const uint8_t* data, size_t size) {
     size_t offset = 0;
     while (offset + 3 <= size) {
@@ -36,6 +38,7 @@ bool isIdrFrame(const uint8_t* data, size_t size) {
     return false;
 }
 
+// 从 AMediaFormat 中读取指定 key 的 buffer。
 void copyFormatBuffer(AMediaFormat* format, const char* key, std::vector<uint8_t>& out) {
     if (format == nullptr) return;
     void* data = nullptr;
@@ -45,6 +48,7 @@ void copyFormatBuffer(AMediaFormat* format, const char* key, std::vector<uint8_t
     }
 }
 
+// 去掉 NAL 数据开头的 Annex-B 起始码。
 void stripAnnexBStartCode(std::vector<uint8_t>& nal) {
     if (nal.size() >= 4 && nal[0] == 0 && nal[1] == 0 && nal[2] == 0 && nal[3] == 1) {
         nal.erase(nal.begin(), nal.begin() + 4);
@@ -54,6 +58,7 @@ void stripAnnexBStartCode(std::vector<uint8_t>& nal) {
 }
 }  // namespace
 
+// 配置并启动 H.264 硬编码器，创建输入 Surface 和输出线程。
 bool VideoEncoder::start(const VideoConfig& config, Callback callback) {
     stop();
     width_ = config.width;
@@ -116,6 +121,7 @@ bool VideoEncoder::start(const VideoConfig& config, Callback callback) {
     return true;
 }
 
+// 停止编码线程并释放 MediaCodec。
 void VideoEncoder::stop() {
     if (!running_.exchange(false)) {
         if (codec_ != nullptr) {
@@ -138,6 +144,7 @@ void VideoEncoder::stop() {
     pps_.clear();
 }
 
+// 等待 SPS 可用，超时返回 false。
 bool VideoEncoder::waitForSps(int timeoutMs) const {
     int waited = 0;
     while (!spsReady_ && waited < timeoutMs) {
@@ -147,6 +154,7 @@ bool VideoEncoder::waitForSps(int timeoutMs) const {
     return spsReady_;
 }
 
+// 提取并清洗 SPS/PPS 编码配置。
 void VideoEncoder::extractCodecConfig(AMediaCodec* codec) {
     AMediaFormat* format = AMediaCodec_getOutputFormat(codec);
     if (format == nullptr) return;
@@ -161,6 +169,7 @@ void VideoEncoder::extractCodecConfig(AMediaCodec* codec) {
     AMediaFormat_delete(format);
 }
 
+// 循环读取编码器输出，把编码帧回调给 Pipeline。
 void VideoEncoder::drainLoop() {
     while (running_) {
         AMediaCodecBufferInfo info{};
