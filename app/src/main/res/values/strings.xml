@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NativePusher</string>
+    <string name="start_stream">开始推流</string>
+    <string name="stop_stream">停止推流</string>
+    <string name="switch_camera">切换摄像头</string>
+    <string name="rtmp_url_hint">rtmp://example.com/live/stream</string>
+    <string name="beauty_off">美颜关</string>
+    <string name="beauty_on">美颜开</string>
+</resources>
