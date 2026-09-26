@@ -25,6 +25,7 @@ public:
     int createOesTexture();
     void renderFrame(const float* transformMatrix, int64_t timestampNs);
     void setBeautyEnabled(bool enabled);
+    bool captureFrame(uint8_t* out, int width, int height);
 
     int startStream(const char* url, const VideoConfig& video, const AudioConfig& audio);
     void stopStream();

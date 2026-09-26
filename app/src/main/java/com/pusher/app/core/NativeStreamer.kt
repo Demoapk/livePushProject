@@ -25,6 +25,9 @@ object NativeStreamer {
     /** 开启/关闭 OpenCL 美颜。 */
     external fun nativeSetBeautyEnabled(enabled: Boolean)
 
+    /** 读取当前预览帧 RGBA 像素到字节数组（需在 GL 线程调用）。 */
+    external fun nativeCaptureFrame(out: ByteArray, width: Int, height: Int): Boolean
+
     /** 启动推流，返回 0 表示成功。 */
     external fun nativeStartStream(
         url: String,

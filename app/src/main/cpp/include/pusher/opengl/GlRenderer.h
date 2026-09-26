@@ -24,6 +24,7 @@ public:
     GLuint createOesTexture();
     void renderFrame(const float* transformMatrix, int64_t timestampNs);
     void setBeautyEnabled(bool enabled);
+    bool captureFrame(uint8_t* out, int width, int height);
 
     void setEncoderWindow(ANativeWindow* window, int width, int height);
     void clearEncoder();

@@ -43,6 +43,18 @@ Java_com_pusher_app_core_NativeStreamer_nativeSetBeautyEnabled(JNIEnv*, jobject,
     g_engine.setBeautyEnabled(enabled == JNI_TRUE);
 }
 
+// JNI：读取当前预览帧到字节数组。
+JNIEXPORT jboolean JNICALL
+Java_com_pusher_app_core_NativeStreamer_nativeCaptureFrame(
+    JNIEnv* env, jobject, jbyteArray out, jint width, jint height) {
+    if (out == nullptr || width <= 0 || height <= 0) return JNI_FALSE;
+    jbyte* bytes = env->GetByteArrayElements(out, nullptr);
+    if (bytes == nullptr) return JNI_FALSE;
+    bool ok = g_engine.captureFrame(reinterpret_cast<uint8_t*>(bytes), width, height);
+    env->ReleaseByteArrayElements(out, bytes, 0);
+    return ok ? JNI_TRUE : JNI_FALSE;
+}
+
 // JNI：启动推流。
 JNIEXPORT jint JNICALL
 Java_com_pusher_app_core_NativeStreamer_nativeStartStream(

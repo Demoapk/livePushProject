@@ -45,6 +45,12 @@ void StreamEngine::setBeautyEnabled(bool enabled) {
     }
 }
 
+// 读取当前预览帧像素。
+bool StreamEngine::captureFrame(uint8_t* out, int width, int height) {
+    if (!renderer_) return false;
+    return renderer_->captureFrame(out, width, height);
+}
+
 // 创建音视频编码器和 RTMP Pipeline，等编码配置就绪后连接服务器。
 int StreamEngine::startStream(const char* url,
                               const VideoConfig& video,

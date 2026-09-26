@@ -139,6 +139,13 @@ void GlRenderer::setBeautyEnabled(bool enabled) {
     beautyEnabled_ = enabled;
 }
 
+// 读取当前预览帧的 RGBA 像素；必须在 GL 线程调用。
+bool GlRenderer::captureFrame(uint8_t* out, int width, int height) {
+    if (out == nullptr || width <= 0 || height <= 0) return false;
+    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, out);
+    return true;
+}
+
 // 立即销毁编码器输入 Surface。
 void GlRenderer::releaseEncoderNow() {
     std::lock_guard<std::mutex> lock(encoderMutex_);

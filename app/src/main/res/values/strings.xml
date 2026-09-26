@@ -7,4 +7,6 @@
     <string name="rtmp_url_hint">rtmp://example.com/live/stream</string>
     <string name="beauty_off">美颜关</string>
     <string name="beauty_on">美颜开</string>
+    <string name="style_on">动漫</string>
+    <string name="segment_on">背景虚化</string>
 </resources>

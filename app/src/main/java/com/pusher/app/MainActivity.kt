@@ -3,6 +3,7 @@ package com.pusher.app
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
@@ -12,6 +13,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,6 +23,9 @@ import com.pusher.app.audio.AudioRecorder
 import com.pusher.app.camera.CameraController
 import com.pusher.app.camera.ICameraSource
 import com.pusher.app.core.NativeStreamer
+import com.pusher.app.style.PortraitSegmenter
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.egl.EGL10
 import javax.microedition.khronos.egl.EGLConfig
@@ -38,6 +43,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var urlInput: EditText
     private lateinit var streamButton: Button
     private lateinit var beautyButton: Button
+    private lateinit var segmentButton: Button
+    private lateinit var stylePreview: ImageView
     private lateinit var switchCamera: Button
     private lateinit var resolutionSpinner: Spinner
     private lateinit var cameraSpinner: Spinner
@@ -50,6 +57,9 @@ class MainActivity : AppCompatActivity() {
     private var openedHeight = 720
     private var streaming = false
     private var beautyEnabled = false
+    private var segmentEnabled = false
+    private var segmentProcessor: PortraitSegmenter? = null
+    private var segmentThread: Thread? = null
     private var audioRecorder: AudioRecorder? = null
 
     private val frameAvailable = AtomicBoolean(false)
@@ -120,6 +130,8 @@ class MainActivity : AppCompatActivity() {
         urlInput = findViewById(R.id.url_input)
         streamButton = findViewById(R.id.stream_button)
         beautyButton = findViewById(R.id.beauty_button)
+        segmentButton = findViewById(R.id.segment_button)
+        stylePreview = findViewById(R.id.style_preview)
         switchCamera = findViewById(R.id.switch_camera)
         resolutionSpinner = findViewById(R.id.resolution_spinner)
         cameraSpinner = findViewById(R.id.camera_spinner)
@@ -212,6 +224,78 @@ class MainActivity : AppCompatActivity() {
             beautyEnabled = !beautyEnabled
             NativeStreamer.nativeSetBeautyEnabled(beautyEnabled)
             beautyButton.text = getString(if (beautyEnabled) R.string.beauty_on else R.string.beauty_off)
+        }
+
+        segmentButton.setOnClickListener {
+            segmentEnabled = !segmentEnabled
+            if (segmentEnabled) {
+                stylePreview.visibility = View.VISIBLE
+                segmentButton.text = "关闭虚化"
+                startSegmentLoop()
+            } else {
+                stopSegmentLoop()
+                stylePreview.visibility = View.GONE
+                segmentButton.text = getString(R.string.segment_on)
+            }
+        }
+    }
+
+    /** 启动人像背景虚化循环。 */
+    private fun startSegmentLoop() {
+        if (segmentThread != null) return
+        segmentThread = Thread({
+            val processor = segmentProcessor ?: PortraitSegmenter().also { segmentProcessor = it }
+            try {
+                while (segmentEnabled) {
+                    val w = preview.width
+                    val h = preview.height
+                    val buffer = ByteArray(w * h * 4)
+                    val latch = CountDownLatch(1)
+                    preview.queueEvent {
+                        NativeStreamer.nativeCaptureFrame(buffer, w, h)
+                        latch.countDown()
+                    }
+                    if (!latch.await(200, TimeUnit.MILLISECONDS)) continue
+
+                    val bitmap = rgbaBytesToBitmap(buffer, w, h)
+                    val result = processor.process(bitmap)
+                    runOnUiThread {
+                        stylePreview.setImageBitmap(result)
+                    }
+                    Thread.sleep(80)
+                }
+            } catch (_: InterruptedException) {
+                // 停止背景虚化循环。
+            }
+        }, "segment-loop")
+        segmentThread?.start()
+    }
+
+    /** 停止人像背景虚化循环。 */
+    private fun stopSegmentLoop() {
+        segmentEnabled = false
+        segmentThread?.interrupt()
+        segmentThread = null
+    }
+
+    /** 把 RGBA 字节数组转成 Bitmap，并做上下翻转。 */
+    private fun rgbaBytesToBitmap(bytes: ByteArray, width: Int, height: Int): Bitmap {
+        val pixels = IntArray(width * height)
+        for (y in 0 until height) {
+            val srcRow = y * width
+            val dstRow = (height - 1 - y) * width
+            for (x in 0 until width) {
+                val src = (srcRow + x) * 4
+                val dst = dstRow + x
+                val r = bytes[src].toInt() and 0xFF
+                val g = bytes[src + 1].toInt() and 0xFF
+                val b = bytes[src + 2].toInt() and 0xFF
+                val a = 0xFF
+                pixels[dst] = (a shl 24) or (r shl 16) or (g shl 8) or b
+            }
+        }
+        return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
+            setPixels(pixels, 0, width, 0, 0, width, height)
         }
     }
 
@@ -329,6 +413,7 @@ class MainActivity : AppCompatActivity() {
 
     /** 页面暂停时停止推流、关闭相机并暂停 GLSurfaceView。 */
     override fun onPause() {
+        stopSegmentLoop()
         if (streaming) stopStream()
         cameraController.close()
         super.onPause()
@@ -344,6 +429,7 @@ class MainActivity : AppCompatActivity() {
 
     /** 销毁时关闭相机并释放相机纹理。 */
     override fun onDestroy() {
+        stopSegmentLoop()
         cameraController.close()
         surfaceTexture?.release()
         surfaceTexture = null
